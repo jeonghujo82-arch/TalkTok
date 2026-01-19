@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>사용자 정보 입력 - Talk Tok</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        /* 이 페이지 전용 스타일 */
+        /* body 폰트는 style.css에서 전역으로 설정됩니다. */
+        .container {
+            max-width: 600px; /* 폼에 맞게 너비 조정 */
+            margin: 50px auto;
+            padding: 30px;
+            background-color: #fff;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        .container h1 {
+            color: #4a148c;
+            margin-bottom: 30px;
+        }
+        .container form {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            text-align: left;
+        }
+        .form-group {
+            margin-bottom: 10px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #555;
+        }
+        .form-group input[type="text"],
+        .form-group select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 1em;
+            box-sizing: border-box; /* 패딩이 너비에 포함되도록 */
+        }
+        .container button {
+            padding: 12px 25px;
+            background-color: #4a148c;
+            color: #fff;
+            border-radius: 5px;
+            font-size: 1.1em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            margin-top: 20px;
+            width: auto; /* 버튼 너비 자동 조절 */
+            align-self: center; /* 폼 내에서 가운데 정렬 */
+        }
+        .container button:hover {
+            background-color: #6a1ba3;
+        }
+        .flash-messages {
+            list-style: none;
+            padding: 0;
+            margin-bottom: 20px;
+        }
+        .flash-messages li {
+            padding: 10px;
+            margin-bottom: 10px;
+            border-radius: 5px;
+            font-size: 0.9em;
+            text-align: center;
+        }
+        .flash-messages li.success {
+            background-color: #d4edda;
+            color: #155724;
+            border-color: #c3e6cb;
+        }
+        .flash-messages li.danger {
+            background-color: #f8d7da;
+            color: #721c24;
+            border-color: #f5c6cb;
+        }
+        .flash-messages li.info {
+            background-color: #d1ecf1;
+            color: #0c5460;
+            border-color: #bee5eb;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="logo">
+            <a href="{{ url_for('index') }}">Talk Tok</a> {# 로고에 링크 추가 #}
+        </div>
+        <nav class="main-nav">
+            <ul>
+                <li><a href="#">Tools <i class="fas fa-caret-down"></i></a></li>
+                <li><a href="{{ url_for('user_info_form', reset=True) }}">대본 생성</a></li>
+            </ul>
+        </nav>
+        <div class="user-nav">
+            {% if current_user.is_authenticated %}
+                <a href="{{ url_for('dashboard') }}">환영합니다, {{ current_user.username }}님!</a>
+                <a href="{{ url_for('logout') }}" class="login-btn">로그아웃</a>
+            {% else %}
+                <a href="#">pricing</a>
+                <a href="#">Teams</a>
+                <a href="{{ url_for('login') }}" class="login-btn">Log In</a>
+                <a href="{{ url_for('register') }}" class="free-trial-btn">Free Trial</a>
+            {% endif %}
+        </div>
+    </header>
+
+    <main>
+        <div class="container">
+            <h1>발표자 정보를 입력해주세요</h1>
+            {# Flask flash 메시지 표시 #}
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    <ul class="flash-messages">
+                        {% for category, message in messages %}
+                            <li class="{{ category }}">{{ message }}</li>
+                        {% endfor %}
+                    </ul>
+                {% endif %}
+            {% endwith %}
+
+            {# is_fresh_start 플래그가 True일 때만 초기 메시지 표시 #}
+            {% if is_fresh_start %}
+                <ul class="flash-messages">
+                    <li class="info">새로운 스크립트 생성을 시작합니다. 사용자 정보를 입력해주세요.</li>
+                </ul>
+            {% endif %}
+
+            <form method="POST">
+                <div class="form-group">
+                    <label for="presenter">발표자:</label>
+                    <input type="text" id="presenter" name="presenter" placeholder="예: 대학생 4학년" value="{{ user_profile.presenter or '' }}" required>
+                </div>
+                <div class="form-group">
+                    <label for="audience">발표 대상:</label>
+                    <input type="text" id="audience" name="audience" placeholder="예: 교양 수업" value="{{ user_profile.audience or '' }}" required>
+                </div>
+                <div class="form-group">
+                    <label for="purpose">발표 목적:</label>
+                    <input type="text" id="purpose" name="purpose" placeholder="예: 발표 점수 잘 받기" value="{{ user_profile.purpose or '' }}" required>
+                </div>
+                <div class="form-group">
+                    <label for="tone">말투 선호:</label>
+                    <select id="tone" name="tone" required>
+                        <option value="">선택하세요</option>
+                        <option value="부드럽고 자연스럽게" {% if user_profile.tone == '부드럽고 자연스럽게' %}selected{% endif %}>부드럽고 자연스럽게</option>
+                        <option value="전문적이고 공식적으로" {% if user_profile.tone == '전문적이고 공식적으로' %}selected{% endif %}>전문적이고 공식적으로</option>
+                        <option value="재미있고 유쾌하게" {% if user_profile.tone == '재미있고 유쾌하게' %}selected{% endif %}>재미있고 유쾌하게</option>
+                        <option value="간결하고 명확하게" {% if user_profile.tone == '간결하고 명확하게' %}selected{% endif %}>간결하고 명확하게</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="time">발표 시간 (분):</label>
+                    <input type="text" id="time" name="time" placeholder="예: 5분" value="{{ user_profile.time or '' }}" required>
+                </div>
+                <button type="submit">다음 단계로</button>
+            </form>
+        </div>
+    </main>
+</body>
+</html>

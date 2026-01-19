@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>스크립트 옵션 선택 - Talk Tok</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <header>
+        <div class="logo">
+            <a href="{{ url_for('index') }}">Talk Tok</a> {# 로고에 링크 추가 #}
+        </div>
+        <nav class="main-nav">
+            <ul>
+                <li><a href="#">Tools <i class="fas fa-caret-down"></i></a></li>
+                <li><a href="{{ url_for('user_info_form', reset=True) }}">대본 생성</a></li>
+            </ul>
+        </nav>
+        <div class="user-nav">
+            {% if current_user.is_authenticated %}
+                <a href="{{ url_for('dashboard') }}">환영합니다, {{ current_user.username }}님!</a>
+                <a href="{{ url_for('logout') }}" class="login-btn">로그아웃</a>
+            {% else %}
+                <a href="#">pricing</a>
+                <a href="#">Teams</a>
+                <a href="{{ url_for('login') }}" class="login-btn">Log In</a>
+                <a href="{{ url_for('register') }}" class="free-trial-btn">Free Trial</a>
+            {% endif %}
+        </div>
+    </header>
+
+    <main>
+        <div class="container">
+            <h1>스크립트 구성 옵션 선택</h1>
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    <ul class="flash-messages">
+                        {% for category, message in messages %}
+                            <li class="{{ category }}">{{ message }}</li>
+                        {% endfor %}
+                    </ul>
+                {% endif %}
+            {% endwith %}
+
+            <p>선택된 키워드: <strong>{{ ", ".join(selected_keywords) }}</strong></p>
+
+            <form method="POST">
+                <div class="option-group">
+                    <h2>서론</h2>
+                    {% for option in intro_options %}
+                        <label class="option-item">
+                            <input type="radio" name="intro_option" value="{{ option }}" required>
+                            {{ option }}
+                        </label>
+                    {% endfor %}
+                </div>
+
+                <div class="option-group">
+                    <h2>본론</h2>
+                    {% for option in body_options %}
+                        <label class="option-item">
+                            <input type="radio" name="body_option" value="{{ option }}" required>
+                            {{ option }}
+                        </label>
+                    {% endfor %}
+                </div>
+
+                <div class="option-group">
+                    <h2>결론</h2>
+                    {% for option in conclusion_options %}
+                        <label class="option-item">
+                            <input type="radio" name="conclusion_option" value="{{ option }}" required>
+                            {{ option }}
+                        </label>
+                    {% endfor %}
+                </div>
+
+                <button type="submit" class="btn">대본 생성하기</button>
+            </form>
+            <div class="action-buttons">
+                <a href="{{ url_for('user_info_form', reset=True) }}" class="btn">처음부터 다시 시작</a>
+            </div>
+        </div>
+    </main>
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+</body>
+</html>

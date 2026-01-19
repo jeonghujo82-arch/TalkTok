@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PPT 파일 업로드 - Talk Tok</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        /* 이 페이지 전용 스타일 */
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f7f8fa;
+            color: #333;
+            line-height: 1.6;
+        }
+        .container {
+            max-width: 900px;
+            margin: 50px auto;
+            padding: 30px;
+            background-color: #fff;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        .container h1 {
+            color: #4a148c;
+            margin-bottom: 30px;
+        }
+        .container .btn {
+            display: inline-block;
+            padding: 12px 25px;
+            background-color: #4a148c;
+            color: #fff;
+            border-radius: 5px;
+            font-weight: bold;
+            transition: background-color 0.3s ease;
+            margin-top: 20px;
+        }
+        .container .btn:hover {
+            background-color: #6a1ba3;
+        }
+        .flash-messages {
+            list-style: none;
+            padding: 0;
+            margin-bottom: 20px;
+        }
+        .flash-messages li {
+            padding: 10px;
+            margin-bottom: 10px;
+            border-radius: 5px;
+            font-size: 0.9em;
+            text-align: center;
+        }
+        .flash-messages li.success {
+            background-color: #d4edda;
+            color: #155724;
+            border-color: #c3e6cb;
+        }
+        .flash-messages li.danger {
+            background-color: #f8d7da;
+            color: #721c24;
+            border-color: #f5c6cb;
+        }
+        .flash-messages li.info {
+            background-color: #d1ecf1;
+            color: #0c5460;
+            border-color: #bee5eb;
+        }
+
+        /* 파일 업로드 영역 스타일 (index.html과 유사) */
+        .upload-area {
+            background-color: #6A329F; /* 보라색 */
+            color: #fff;
+            padding: 80px 40px; /* 상하좌우 패딩 */
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column; /* 세로 방향 정렬 */
+            align-items: center; /* 가로 가운데 정렬 */
+            justify-content: center; /* 세로 가운데 정렬 */
+            min-height: 250px; /* 최소 높이 */
+            border: 2px dashed rgba(255,255,255,0.3); /* 점선 테두리 */
+            cursor: pointer; /* 클릭 가능한 영역임을 표시 */
+        }
+        .document-icon {
+            font-size: 4em; /* 아이콘 크기 */
+            margin-bottom: 30px;
+        }
+        .choose-files-btn, .choose-files-btn-script { /* 두 버튼 모두 적용 */
+            background-color: #8c4ac3; /* 버튼 배경색 (좀 더 밝은 보라색) */
+            color: #fff;
+            padding: 15px 30px;
+            border-radius: 50px; /* 둥근 버튼 */
+            font-weight: bold;
+            font-size: 1.1em;
+            display: flex; /* 아이콘과 텍스트를 나란히 */
+            align-items: center;
+            gap: 10px; /* 텍스트와 아이콘 간격 */
+            margin-bottom: 20px;
+            transition: background-color 0.3s ease;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2); /* 버튼 그림자 */
+            border: none;
+            cursor: pointer;
+        }
+        .choose-files-btn:hover, .choose-files-btn-script:hover {
+            background-color: #a15ddb; /* 호버 시 색상 변경 */
+        }
+        .choose-files-btn i, .choose-files-btn-script i {
+            font-size: 0.8em; /* 드롭다운 아이콘 크기 */
+        }
+        .upload-area p {
+            font-size: 1.1em;
+            color: rgba(255,255,255,0.8); /* 옅은 흰색 텍스트 */
+        }
+        .upload-area.drag-over {
+            border-color: #fff;
+            box-shadow: 0 0 20px rgba(255,255,255,0.5);
+        }
+        
+        /* 선택된 파일 표시 스타일 */
+        .selected-file {
+            background-color: rgba(255,255,255,0.1);
+            padding: 10px 20px;
+            border-radius: 25px;
+            margin-top: 15px;
+            display: inline-block;
+            font-size: 0.9em;
+        }
+        
+        /* 업로드 버튼 스타일 */
+        .upload-btn {
+            background-color: #4a148c;
+            color: #fff;
+            padding: 12px 30px;
+            border-radius: 25px;
+            border: none;
+            font-weight: bold;
+            font-size: 1.1em;
+            cursor: pointer;
+            margin-top: 20px;
+            transition: background-color 0.3s ease;
+        }
+        .upload-btn:hover {
+            background-color: #6a1ba3;
+        }
+        .upload-btn:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="logo">
+            <a href="{{ url_for('index') }}">Talk Tok</a> {# 로고에 링크 추가 #}
+        </div>
+        <nav class="main-nav">
+            <ul>
+                <li><a href="#">Tools <i class="fas fa-caret-down"></i></a></li>
+                <li><a href="#">Compress</a></li>
+                <li><a href="#">Convert</a></li>
+                <li><a href="{{ url_for('user_info_form', reset=True) }}">스크립트 생성</a></li>
+            </ul>
+        </nav>
+        <div class="user-nav">
+            {% if current_user.is_authenticated %}
+                <a href="{{ url_for('dashboard') }}">환영합니다, {{ current_user.username }}님!</a>
+                <a href="{{ url_for('logout') }}" class="login-btn">로그아웃</a>
+            {% else %}
+                <a href="#">pricing</a>
+                <a href="#">Teams</a>
+                <a href="{{ url_for('login') }}" class="login-btn">Log In</a>
+                <a href="{{ url_for('register') }}" class="free-trial-btn">Free Trial</a>
+            {% endif %}
+        </div>
+    </header>
+
+    <main>
+        <div class="container">
+            <h1>발표 자료 (PPT)를 업로드해주세요</h1>
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    <ul class="flash-messages">
+                        {% for category, message in messages %}
+                            <li class="{{ category }}">{{ message }}</li>
+                        {% endfor %}
+                    </ul>
+                {% endif %}
+            {% endwith %}
+
+            <form id="upload-ppt-form" action="{{ url_for('upload_ppt_for_script') }}" method="POST" enctype="multipart/form-data">
+                <div class="upload-area" onclick="document.getElementById('file-input-script').click()">
+                    <i class="fas fa-file-powerpoint document-icon"></i>
+                    <button type="button" class="choose-files-btn-script">
+                        CHOOSE PPT FILES <i class="fas fa-chevron-down"></i>
+                    </button>
+                    <input type="file" name="file" id="file-input-script" style="display: none;" accept=".ppt,.pptx" onchange="handleFileSelect(this)">
+                    <p>or drop PPT files here</p>
+                    <div id="selected-file-info" class="selected-file" style="display: none;"></div>
+                </div>
+                <button type="submit" class="upload-btn" id="upload-btn" disabled>업로드</button>
+            </form>
+            
+            <!-- 변환 중 메시지 표시 영역 추가 -->
+            <div id="loading-message-script" style="display: none; margin-top: 30px; font-size: 1.2em; color: #4a148c; font-weight: bold;">
+                <i class="fas fa-spinner fa-spin"></i> 파일 업로드 중... 잠시만 기다려 주세요.
+            </div>
+        </div>
+    </main>
+
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+    <script>
+        // 파일 선택 처리 함수
+        function handleFileSelect(input) {
+            const file = input.files[0];
+            const fileInfo = document.getElementById('selected-file-info');
+            const uploadBtn = document.getElementById('upload-btn');
+            
+            if (file) {
+                // 파일 형식 검증
+                const allowedTypes = ['.ppt', '.pptx'];
+                const fileExtension = '.' + file.name.split('.').pop().toLowerCase();
+                
+                if (!allowedTypes.includes(fileExtension)) {
+                    alert('PPT 파일 (.ppt, .pptx)만 업로드할 수 있습니다.');
+                    input.value = '';
+                    fileInfo.style.display = 'none';
+                    uploadBtn.disabled = true;
+                    return;
+                }
+                
+                // 선택된 파일 정보 표시
+                fileInfo.innerHTML = `<i class="fas fa-file-powerpoint"></i> ${file.name} (${formatFileSize(file.size)})`;
+                fileInfo.style.display = 'inline-block';
+                uploadBtn.disabled = false;
+            } else {
+                fileInfo.style.display = 'none';
+                uploadBtn.disabled = true;
+            }
+        }
+        
+        // 파일 크기 포맷팅 함수
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+        
+        // 드래그 앤 드롭 기능
+        const uploadArea = document.querySelector('.upload-area');
+        
+        uploadArea.addEventListener('dragover', function(e) {
+            e.preventDefault();
+            uploadArea.classList.add('drag-over');
+        });
+        
+        uploadArea.addEventListener('dragleave', function(e) {
+            e.preventDefault();
+            uploadArea.classList.remove('drag-over');
+        });
+        
+        uploadArea.addEventListener('drop', function(e) {
+            e.preventDefault();
+            uploadArea.classList.remove('drag-over');
+            
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                const fileInput = document.getElementById('file-input-script');
+                fileInput.files = files;
+                handleFileSelect(fileInput);
+            }
+        });
+        
+        // 폼 제출 시 로딩 메시지 표시
+        document.getElementById('upload-ppt-form').addEventListener('submit', function(e) {
+            const loadingMessage = document.getElementById('loading-message-script');
+            const uploadBtn = document.getElementById('upload-btn');
+            
+            loadingMessage.style.display = 'block';
+            uploadBtn.disabled = true;
+            uploadBtn.textContent = '업로드 중...';
+        });
+    </script>
+</body>
+</html>

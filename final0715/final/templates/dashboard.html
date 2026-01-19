@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>대시보드</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        /* 대시보드 페이지 스타일 */
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f7f8fa;
+            color: #333;
+        }
+        .container {
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 30px;
+            background-color: #fff;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        .container h1 {
+            color: #4a148c;
+            margin-bottom: 20px;
+        }
+        .container p {
+            font-size: 1.1em;
+            margin-bottom: 30px;
+        }
+        .container .btn {
+            display: inline-block;
+            padding: 10px 20px;
+            background-color: #4a148c;
+            color: #fff;
+            border-radius: 5px;
+            text-decoration: none;
+            font-weight: bold;
+            transition: background-color 0.3s ease;
+        }
+        .container .btn:hover {
+            background-color: #6a1ba3;
+        }
+    </style>
+</head>
+<body>
+    <div class="logo">
+            <a href="{{ url_for('index') }}">Talk Tok</a> {# 로고에 링크 추가 #}
+    </div>
+    <div class="container">
+        <h1>환영합니다, {{ current_user.username }}님!</h1>
+        <p>이곳은 로그인된 사용자만 접근할 수 있는 대시보드 페이지입니다.</p>
+        <a href="{{ url_for('logout') }}" class="btn">로그아웃</a>
+        <a href="{{ url_for('index') }}" class="btn" style="margin-left: 10px;">메인 페이지로 돌아가기</a>
+    </div>
+</body>
+</html>

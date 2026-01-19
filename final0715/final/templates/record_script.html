@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>대본 녹음 파일 업로드 - Talk Tok</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        /* 이 페이지 전용 스타일 */
+        .record-container {
+            max-width: 900px;
+            margin: 50px auto;
+            padding: 30px;
+            background-color: #fff;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        .record-container h1 {
+            color: #4a148c;
+            margin-bottom: 30px;
+        }
+        .script-display {
+            background-color: #f8f8f8;
+            border: 1px solid #eee;
+            padding: 20px;
+            margin-bottom: 30px;
+            border-radius: 8px;
+            text-align: left;
+            white-space: pre-wrap; /* 줄바꿈 유지 */
+            font-family: 'Noto Sans KR', sans-serif; /* 한국어 폰트 */
+            line-height: 1.8;
+            font-size: 1.1em;
+            max-height: 400px; /* 스크롤바를 위한 최대 높이 */
+            overflow-y: auto; /* 내용이 길어지면 스크롤바 생성 */
+        }
+        .upload-audio-area {
+            background-color: #6A329F; /* 보라색 */
+            color: #fff;
+            padding: 60px 40px; /* 상하좌우 패딩 */
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 200px;
+            border: 2px dashed rgba(255,255,255,0.3);
+            margin-bottom: 30px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .upload-audio-area.drag-over {
+            border-color: #fff;
+            box-shadow: 0 0 20px rgba(255,255,255,0.5);
+        }
+        .upload-audio-area.file-selected {
+            border-color: #4caf50;
+            background-color: #5a4172;
+        }
+        .upload-audio-area i {
+            font-size: 3.5em;
+            margin-bottom: 20px;
+        }
+        .upload-audio-area .choose-audio-btn {
+            background-color: #8c4ac3;
+            color: #fff;
+            padding: 12px 25px;
+            border-radius: 50px;
+            font-weight: bold;
+            font-size: 1em;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 15px;
+            transition: background-color 0.3s ease;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+            border: none;
+            cursor: pointer;
+        }
+        .upload-audio-area .choose-audio-btn:hover {
+            background-color: #a15ddb;
+        }
+        .upload-audio-area p {
+            font-size: 1em;
+            color: rgba(255,255,255,0.8);
+        }
+        .file-info {
+            margin-top: 15px;
+            padding: 10px;
+            background-color: rgba(255,255,255,0.1);
+            border-radius: 5px;
+            font-size: 0.9em;
+            display: none;
+        }
+        .loading-message-audio {
+            display: none; /* JS로 제어 */
+            margin-top: 20px;
+            font-size: 1.1em;
+            color: #4a148c;
+            font-weight: bold;
+        }
+        .action-buttons {
+            margin-top: 30px;
+        }
+        .action-buttons .btn {
+            margin: 0 10px;
+        }
+        .upload-btn {
+            background-color: #4caf50;
+            color: white;
+            padding: 12px 25px;
+            border: none;
+            border-radius: 5px;
+            font-size: 1em;
+            cursor: pointer;
+            display: none;
+            margin-top: 20px;
+            transition: background-color 0.3s ease;
+        }
+        .upload-btn:hover {
+            background-color: #45a049;
+        }
+        .upload-btn:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="logo">
+            <a href="{{ url_for('index') }}">Talk Tok</a> {# 로고에 링크 추가 #}
+        </div>
+        <nav class="main-nav">
+            <ul>
+                <li><a href="#">Tools <i class="fas fa-caret-down"></i></a></li>
+                <li><a href="{{ url_for('user_info_form', reset=True) }}">대본 생성</a></li>
+            </ul>
+        </nav>
+        <div class="user-nav">
+            {% if current_user.is_authenticated %}
+                <a href="{{ url_for('dashboard') }}">환영합니다, {{ current_user.username }}님!</a>
+                <a href="{{ url_for('logout') }}" class="login-btn">로그아웃</a>
+            {% else %}
+                <a href="#">pricing</a>
+                <a href="#">Teams</a>
+                <a href="{{ url_for('login') }}" class="login-btn">Log In</a>
+                <a href="{{ url_for('register') }}" class="free-trial-btn">Free Trial</a>
+            {% endif %}
+        </div>
+    </header>
+
+    <main>
+        <div class="record-container">
+            <h1>발표 녹음 파일 업로드</h1>
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    <ul class="flash-messages">
+                        {% for category, message in messages %}
+                            <li class="{{ category }}">{{ message }}</li>
+                        {% endfor %}
+                    </ul>
+                {% endif %}
+            {% endwith %}
+
+            <p>아래 대본을 읽고 녹음한 오디오 파일을 업로드해주세요.</p>
+            <div class="script-display">
+                {{ generated_script | safe }}
+            </div>
+
+            <form id="upload-audio-form" action="{{ url_for('record_script') }}" method="POST" enctype="multipart/form-data">
+                <div class="upload-audio-area" id="upload-audio-area">
+                    <i class="fas fa-file-audio" id="upload-icon"></i>
+                    <button type="button" class="choose-audio-btn" id="choose-audio-btn">
+                        CHOOSE AUDIO FILE <i class="fas fa-chevron-down"></i>
+                    </button>
+                    <input type="file" name="audio_data" id="audio-file-input" style="display: none;" accept=".mp3,.wav,.webm,audio/*">
+                    <p id="upload-text">or drop audio files here (.mp3, .wav, .webm)</p>
+                    <div class="file-info" id="file-info">
+                        <div id="file-name"></div>
+                        <div id="file-size"></div>
+                    </div>
+                </div>
+                <button type="submit" class="upload-btn" id="upload-btn">
+                    <i class="fas fa-upload"></i> 업로드하기
+                </button>
+            </form>
+            
+            <div class="loading-message-audio" id="loading-message-audio">
+                <i class="fas fa-spinner fa-spin"></i> 오디오 파일 업로드 중...
+            </div>
+
+            <div class="action-buttons">
+                <a href="{{ url_for('user_info_form', reset=True) }}" class="btn">처음부터 다시 시작</a>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const chooseAudioBtn = document.getElementById('choose-audio-btn');
+            const audioFileInput = document.getElementById('audio-file-input');
+            const uploadAudioArea = document.getElementById('upload-audio-area');
+            const uploadForm = document.getElementById('upload-audio-form');
+            const loadingMessage = document.getElementById('loading-message-audio');
+            const uploadBtn = document.getElementById('upload-btn');
+            const fileInfo = document.getElementById('file-info');
+            const fileName = document.getElementById('file-name');
+            const fileSize = document.getElementById('file-size');
+            const uploadIcon = document.getElementById('upload-icon');
+            const uploadText = document.getElementById('upload-text');
+
+            // 파일 크기를 읽기 쉬운 형태로 변환
+            function formatFileSize(bytes) {
+                if (bytes === 0) return '0 Bytes';
+                const k = 1024;
+                const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+                const i = Math.floor(Math.log(bytes) / Math.log(k));
+                return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+            }
+
+            // 파일 유효성 검사
+            function validateAudioFile(file) {
+                const allowedTypes = ['audio/mp3', 'audio/mpeg', 'audio/wav', 'audio/webm'];
+                const allowedExtensions = ['.mp3', '.wav', '.webm'];
+                const maxSize = 50 * 1024 * 1024; // 50MB
+
+                // 파일 확장자 확인
+                const fileExtension = file.name.toLowerCase().substring(file.name.lastIndexOf('.'));
+                if (!allowedExtensions.includes(fileExtension)) {
+                    alert('지원하지 않는 파일 형식입니다. .mp3, .wav, .webm 파일만 업로드 가능합니다.');
+                    return false;
+                }
+
+                // 파일 크기 확인
+                if (file.size > maxSize) {
+                    alert('파일 크기가 너무 큽니다. 최대 50MB까지 업로드 가능합니다.');
+                    return false;
+                }
+
+                return true;
+            }
+
+            // 파일 선택 처리
+            function handleFileSelect(file) {
+                if (!validateAudioFile(file)) {
+                    return;
+                }
+
+                // UI 업데이트
+                uploadAudioArea.classList.add('file-selected');
+                uploadIcon.className = 'fas fa-check-circle';
+                uploadText.textContent = '파일이 선택되었습니다!';
+                
+                // 파일 정보 표시
+                fileName.textContent = `파일명: ${file.name}`;
+                fileSize.textContent = `크기: ${formatFileSize(file.size)}`;
+                fileInfo.style.display = 'block';
+                
+                // 업로드 버튼 표시
+                uploadBtn.style.display = 'inline-block';
+            }
+
+            // 파일 선택 버튼 클릭 이벤트
+            chooseAudioBtn.addEventListener('click', function() {
+                audioFileInput.click();
+            });
+
+            // 업로드 영역 클릭 이벤트
+            uploadAudioArea.addEventListener('click', function(e) {
+                if (e.target !== chooseAudioBtn) {
+                    audioFileInput.click();
+                }
+            });
+
+            // 파일 입력 변경 이벤트
+            audioFileInput.addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    handleFileSelect(file);
+                }
+            });
+
+            // 드래그 앤 드롭 이벤트
+            uploadAudioArea.addEventListener('dragover', function(e) {
+                e.preventDefault();
+                uploadAudioArea.classList.add('drag-over');
+            });
+
+            uploadAudioArea.addEventListener('dragleave', function(e) {
+                e.preventDefault();
+                uploadAudioArea.classList.remove('drag-over');
+            });
+
+            uploadAudioArea.addEventListener('drop', function(e) {
+                e.preventDefault();
+                uploadAudioArea.classList.remove('drag-over');
+                
+                const files = e.dataTransfer.files;
+                if (files.length > 0) {
+                    const file = files[0];
+                    audioFileInput.files = files;
+                    handleFileSelect(file);
+                }
+            });
+
+            // 폼 제출 이벤트
+            uploadForm.addEventListener('submit', function(e) {
+                if (!audioFileInput.files || audioFileInput.files.length === 0) {
+                    e.preventDefault();
+                    alert('먼저 오디오 파일을 선택해주세요.');
+                    return;
+                }
+
+                // 로딩 메시지 표시
+                loadingMessage.style.display = 'block';
+                uploadBtn.disabled = true;
+                uploadBtn.textContent = '업로드 중...';
+            });
+        });
+    </script>
+
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+
+    <script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const chooseBtn = document.querySelector(".choose-audio-btn");
+        const fileInput = document.getElementById("audio-file-input");
+        const loadingMessage = document.getElementById("loading-message-audio");
+        const form = document.getElementById("upload-audio-form");
+
+        chooseBtn.addEventListener("click", function () {
+            fileInput.click(); // 파일 선택 창 열기
+        });
+
+        fileInput.addEventListener("change", function () {
+            if (fileInput.files.length > 0) {
+                loadingMessage.style.display = "block"; // 로딩 메시지 보이기
+                form.submit(); // 폼 자동 제출
+            }
+        });
+    });
+</script>
+</body>
+</html>
